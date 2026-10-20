@@ -500,25 +500,25 @@ class Jobstats:
         if not args or "total_memory" in args:
             self.get_data(
                 "total_memory",
-                "max_over_time(cgroup_memory_total_bytes{{cluster='{cluster}',jobid='{jobid}',step='',task=''}}[{diff}s])",
+                "max_over_time(jobstats_cgroup_cgroup_memory_total_bytes{{cluster='{cluster}',jobid='{jobid}',step='',task=''}}[{diff}s])",
                 True,
             )
         if not args or "used_memory" in args:
             self.get_data(
                 "used_memory",
-                "max_over_time(((cgroup_memory_rss_bytes{{cluster='{cluster}',jobid='{jobid}',step='',task=''}}+cgroup_memory_shmem_bytes{{cluster='{cluster}',jobid='{jobid}',step='',task=''}}) or 1*cgroup_memory_rss_bytes{{cluster='{cluster}',jobid='{jobid}',step='',task=''}})[{diff}s:])",
+                "max_over_time(((jobstats_cgroup_cgroup_memory_rss_bytes{{cluster='{cluster}',jobid='{jobid}',step='',task=''}}+cgroup_memory_shmem_bytes{{cluster='{cluster}',jobid='{jobid}',step='',task=''}}) or 1*cgroup_memory_rss_bytes{{cluster='{cluster}',jobid='{jobid}',step='',task=''}})[{diff}s:])",
                 True,
             )
         if not args or "total_time" in args:
             self.get_data(
                 "total_time",
-                "max_over_time(cgroup_cpu_total_seconds{{cluster='{cluster}',jobid='{jobid}',step='',task=''}}[{diff}s])",
+                "max_over_time(jobstats_cgroup_cgroup_cpu_total_seconds{{cluster='{cluster}',jobid='{jobid}',step='',task=''}}[{diff}s])",
                 True,
             )
         if not args or "cpus" in args:
             self.get_data(
                 "cpus",
-                "max_over_time(cgroup_cpus{{cluster='{cluster}',jobid='{jobid}',step='',task=''}}[{diff}s])",
+                "max_over_time(jobstats_cgroup_cgroup_cpus{{cluster='{cluster}',jobid='{jobid}',step='',task=''}}[{diff}s])",
                 True,
             )
 
