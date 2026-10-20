@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+
 import argparse
 import os
 import subprocess
@@ -69,24 +69,24 @@ def main():
         help="Raw Slurm job ID",
     )
     parser.add_argument("--stats", required=True, help="Job statistics")
-    
+
     args = parser.parse_args()
-    
+
     db_handler = JobstatsDBHandler()
-    
+
     # Check if external DB is enabled and available
     if not EXTERNAL_DB_CONFIG.get("enabled", False):
         print("ERROR: External database is not enabled in config.py", file=sys.stderr)
         sys.exit(1)
-    
+
     # Check if MySQLdb is available
     if MySQLdb is None:
         print("ERROR: MySQLdb module not available. Install mysqlclient to use external database functionality.", file=sys.stderr)
         sys.exit(1)
-    
+
     # Save to external database
     errors = db_handler.save_jobstats(args.cluster, args.jobid, args.stats, None)
-    
+
     if errors:
         print(f"Errors occurred: {'; '.join(errors)}", file=sys.stderr)
         sys.exit(1)

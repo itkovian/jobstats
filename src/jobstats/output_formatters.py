@@ -3,8 +3,8 @@ import math
 from abc import ABC, abstractmethod
 from textwrap import TextWrapper
 
-import config as c
-from jobstats import Jobstats
+import jobstats.config as c
+from jobstats.jobstats import Jobstats
 try:
     from blessed import Terminal
     blessed_is_available = True
@@ -116,7 +116,7 @@ class BaseFormatter(ABC):
             return f'     CPU Memory: {total} ({pc}{unit} per CPU-core)'
         else:
             return total
- 
+
     @staticmethod
     def rounded_memory_with_safety(mem_used: float) -> int:
         """Return the suggested memory including 20% safety. The input
@@ -456,7 +456,7 @@ class ClassicOutput(BaseFormatter):
                     else:
                         value_str = str(value)
                     this_metric.append(value_str)
-                columns.append(this_metric)   
+                columns.append(this_metric)
                 row_labels = [f"    {node} (GPU {idx})  " for node, _, idx in gm.node_value_index]
         if not headers:
             return ""

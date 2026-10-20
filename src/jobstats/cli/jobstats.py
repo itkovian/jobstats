@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 
 import argparse
-from config import PROM_SERVER
-from jobstats import Jobstats
-from output_formatters import ClassicOutput
+
+from jobstats.config import PROM_SERVER
+from jobstats.jobstats import Jobstats
+from jobstats.output_formatters import ClassicOutput
 
 
-if __name__ == "__main__":
+def main():
 
     parser = argparse.ArgumentParser(description="Show job utilization.")
     parser.add_argument('job', metavar='jobid', nargs='+',
@@ -44,3 +45,7 @@ if __name__ == "__main__":
         else:
             formatter = ClassicOutput(stats)
             print(formatter.output(no_color=args.no_color))
+
+
+if __name__ == "__main__":
+    main()
