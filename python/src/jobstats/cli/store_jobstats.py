@@ -12,8 +12,8 @@ except ImportError:
 # (e.g. /usr/local/bin/store_jobstats.py -> /usr/local/jobstats/store_jobstats.py).
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 
-from config import EXTERNAL_DB_CONFIG
-from db_handler import JobstatsDBHandler
+from jobstats.config import EXTERNAL_DB_CONFIG
+from jobstats.db_handler import JobstatsDBHandler
 
 
 def parse_jobid(value):

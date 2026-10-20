@@ -1,7 +1,7 @@
 import os
 import time
-from jobstats import Jobstats
-from output_formatters import ClassicOutput
+from jobstats.jobstats import Jobstats
+from jobstats.output_formatters import ClassicOutput
 import pytest
 
 

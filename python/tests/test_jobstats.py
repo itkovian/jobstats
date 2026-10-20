@@ -3,7 +3,7 @@ import base64
 import gzip
 import json
 import pytest
-from jobstats import Jobstats
+from jobstats.jobstats import Jobstats
 
 DEVNULL = open(os.devnull, 'w')
 SLURM_VERSION = "25.11.5"

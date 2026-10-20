@@ -10,7 +10,7 @@ import syslog
 import time
 from typing import Dict
 import requests
-import config as c
+import jobstats.config as c
 if c.EXTERNAL_DB_CONFIG.get("enabled", False):
     from db_handler import JobstatsDBHandler
 if not hasattr(c, "GPU_EXPORTER_JOBID"):
@@ -197,7 +197,7 @@ class Jobstats:
                 else:
                     # Try to get AdminComment from Slurm database first
                     self.data = i.get('AdminComment', None)
-                    
+
                     # If no data found and external DB is enabled, try external DB
                     if (not self.data or self.data == '') and c.EXTERNAL_DB_CONFIG.get("enabled", False):
                         try:
@@ -208,7 +208,7 @@ class Jobstats:
                                 self.debug_print(msg)
                         except Exception as e:
                             self.debug_print(f"Failed to retrieve from external database: {e}")
-                            
+
                 self.user         = i.get('User', None)
                 self.account      = i.get('Account', None)
                 self.state        = i.get('State', None)
@@ -256,7 +256,7 @@ class Jobstats:
             msg = (f"\nFailed to lookup job {self.jobid}. Make sure the cluster is correct by\n"
                    "specifying the -c option (e.g., $ jobstats 1234567 -c frontier).\n")
             self.error(msg)
- 
+
         if self.jobidraw is None:
             if self.cluster:
                 clstr = c.CLUSTER_TRANS.get(self.cluster, self.cluster)
@@ -272,7 +272,7 @@ class Jobstats:
             for part in self.tres.split(","):
                 if "gres/gpu=" in part:
                     self.gpus = int(part.split("=")[-1])
- 
+
         if self.timelimitraw.isnumeric():
             self.timelimitraw = int(self.timelimitraw)
         if "CANCEL" in self.state:
@@ -353,7 +353,7 @@ class Jobstats:
                     params['time'] = time
             response = requests.get(f'{self.prom_server}/api/v1/{qstr}', params)
             return response.json()
-        
+
         expanded_query = query.format(cluster=self.cluster, jobid=self.jobidraw, diff=int(self.diff))
         if query_sluid and self.sluid != None:
             expanded_query += " or " + query.format(cluster=self.cluster, jobid=self.sluid, diff=int(self.diff))
@@ -628,7 +628,7 @@ class Jobstats:
                 gm = DetailedGpuMetric(name, settings, self.is_mig_job())
                 gm.parse(sp_node)
                 self.detailed_gpu_metrics.append(gm)
- 
+
             # gpu memory
             overall = 0
             overall_total = 0
