@@ -10,36 +10,76 @@ from jobstats.output_formatters import ClassicOutput
 def main():
 
     parser = argparse.ArgumentParser(description="Show job utilization.")
-    parser.add_argument('job', metavar='jobid', nargs='+',
-                    help='Job numbers to lookup')
-    parser.add_argument("-c", "--cluster", default=None,
-                    help="Specify cluster instead of relying on default on the current machine.")
-    parser.add_argument("-j", "--json", action='store_true', default=False,
-                    help="Produce row data in json format, with no summary.")
-    parser.add_argument("-b", "--base64", action='store_true', default=False,
-                    help="Produce row data in json format, with no summary and also gzip and \
-                          encode it in base64 output for db storage.")
-    parser.add_argument("-d", "--debug", action='store_true', default=False,
-                    help="Output debugging information.")
-    parser.add_argument("-S", "--syslog", action='store_true', default=False,
-                    help="Output debugging information to syslog.")
-    parser.add_argument("-f", "--force", action='store_true', default=False,
-                    help="Force recalculation without using cached data from the database.")
-    parser.add_argument("-n", "--no-color", action='store_true', default=False,
-                    help="Output report without colorization.")
-    parser.add_argument("-B", "--batch-script", action='store_true', default=False,
-                    help="Show the Slurm batch script (if available).")
+    parser.add_argument("job", metavar="jobid", nargs="+", help="Job numbers to lookup")
+    parser.add_argument(
+        "-c",
+        "--cluster",
+        default=None,
+        help="Specify cluster instead of relying on default on the current machine.",
+    )
+    parser.add_argument(
+        "-j",
+        "--json",
+        action="store_true",
+        default=False,
+        help="Produce row data in json format, with no summary.",
+    )
+    parser.add_argument(
+        "-b",
+        "--base64",
+        action="store_true",
+        default=False,
+        help="Produce row data in json format, with no summary and also gzip and \
+                          encode it in base64 output for db storage.",
+    )
+    parser.add_argument(
+        "-d",
+        "--debug",
+        action="store_true",
+        default=False,
+        help="Output debugging information.",
+    )
+    parser.add_argument(
+        "-S",
+        "--syslog",
+        action="store_true",
+        default=False,
+        help="Output debugging information to syslog.",
+    )
+    parser.add_argument(
+        "-f",
+        "--force",
+        action="store_true",
+        default=False,
+        help="Force recalculation without using cached data from the database.",
+    )
+    parser.add_argument(
+        "-n",
+        "--no-color",
+        action="store_true",
+        default=False,
+        help="Output report without colorization.",
+    )
+    parser.add_argument(
+        "-B",
+        "--batch-script",
+        action="store_true",
+        default=False,
+        help="Show the Slurm batch script (if available).",
+    )
     args = parser.parse_args()
 
     for jobid in args.job:
-        stats = Jobstats(jobid=jobid,
-                         cluster=args.cluster,
-                         prom_server=PROM_SERVER,
-                         debug=args.debug,
-                         debug_syslog=args.syslog,
-                         force_recalc=args.force,
-                         batch_script=args.batch_script,
-                         json_or_base64 = args.json or args.base64)
+        stats = Jobstats(
+            jobid=jobid,
+            cluster=args.cluster,
+            prom_server=PROM_SERVER,
+            debug=args.debug,
+            debug_syslog=args.syslog,
+            force_recalc=args.force,
+            batch_script=args.batch_script,
+            json_or_base64=args.json or args.base64,
+        )
         if args.json or args.base64:
             print(stats.report_job_json(args.base64))
         else:

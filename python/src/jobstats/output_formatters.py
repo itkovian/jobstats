@@ -5,8 +5,10 @@ from textwrap import TextWrapper
 
 import jobstats.config as c
 from jobstats.jobstats import Jobstats
+
 try:
     from blessed import Terminal
+
     blessed_is_available = True
 except ModuleNotFoundError:
     blessed_is_available = False
@@ -19,14 +21,14 @@ SECONDS_PER_HOUR = 3600
 
 class BaseFormatter(ABC):
     """Abstract base class for custom output formatters. An output
-       formatter is used to print the job report."""
+    formatter is used to print the job report."""
 
     def __init__(self, js: Jobstats) -> None:
         self.js = js
         self.gm_overall = {}
 
     @abstractmethod
-    def output(self, no_color: bool=True) -> str:
+    def output(self, no_color: bool = True) -> str:
         pass
 
     @abstractmethod
@@ -52,7 +54,7 @@ class BaseFormatter(ABC):
     @staticmethod
     def human_bytes(size: int, decimal_places=1) -> str:
         size = float(size)
-        for unit in ['B', 'KB', 'MB', 'GB', 'TB', 'PB']:
+        for unit in ["B", "KB", "MB", "GB", "TB", "PB"]:
             if size < 1024:
                 break
             size /= 1024
@@ -69,7 +71,7 @@ class BaseFormatter(ABC):
             if hour > 0:
                 hour = "%02d:" % hour
             else:
-                hour = '00:'
+                hour = "00:"
         seconds = seconds % (24 * 3600)
         seconds %= 3600
         minutes = seconds // 60
@@ -78,8 +80,8 @@ class BaseFormatter(ABC):
 
     @staticmethod
     def human_datetime(seconds_since_epoch: int) -> str:
-       fmt = "%a %b %-d, %Y at %-I:%M %p"
-       return datetime.datetime.fromtimestamp(seconds_since_epoch).strftime(fmt)
+        fmt = "%a %b %-d, %Y at %-I:%M %p"
+        return datetime.datetime.fromtimestamp(seconds_since_epoch).strftime(fmt)
 
     def cpu_memory_formatted(self, with_label=True) -> str:
         """Return the total CPU memory with formatting."""
@@ -94,11 +96,11 @@ class BaseFormatter(ABC):
             bytes_ = float(total.replace("T", "")) * 1e12
         else:
             if with_label:
-                return f'     CPU Memory: {total}'
+                return f"     CPU Memory: {total}"
             else:
                 return total
         per_core = bytes_ / int(self.js.ncpus)
-        for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
+        for unit in ["B", "KB", "MB", "GB", "TB"]:
             if per_core < 1000:
                 break
             per_core /= 1000
@@ -112,15 +114,15 @@ class BaseFormatter(ABC):
         total = f"{total}B"
         if with_label:
             if self.js.ncpus == "1":
-                return f'     CPU Memory: {total}'
-            return f'     CPU Memory: {total} ({pc}{unit} per CPU-core)'
+                return f"     CPU Memory: {total}"
+            return f"     CPU Memory: {total} ({pc}{unit} per CPU-core)"
         else:
             return total
 
     @staticmethod
     def rounded_memory_with_safety(mem_used: float) -> int:
         """Return the suggested memory including 20% safety. The input
-           value (mem_used) has units of GB."""
+        value (mem_used) has units of GB."""
         mem_with_safety = math.ceil(1.2 * mem_used)
         if mem_with_safety > 1000:
             mem_suggested = round(mem_with_safety, -2)
@@ -144,16 +146,24 @@ class BaseFormatter(ABC):
         if self.js.timelimitraw == "UNLIMITED":
             return f"     Time Limit: {clr}UNLIMITED{self.txt_normal}"
         if self.js.state == "COMPLETED" and self.js.timelimitraw > 0:
-            self.js.time_efficiency = round(100 * self.js.diff / (SECONDS_PER_MINUTE * self.js.timelimitraw))
+            self.js.time_efficiency = round(
+                100 * self.js.diff / (SECONDS_PER_MINUTE * self.js.timelimitraw)
+            )
             self.js.time_efficiency = min(self.js.time_efficiency, 100)
-            if self.js.time_efficiency < c.TIME_EFFICIENCY_BLACK and self.js.diff > 3 * c.MIN_RUNTIME_SECONDS:
+            if (
+                self.js.time_efficiency < c.TIME_EFFICIENCY_BLACK
+                and self.js.diff > 3 * c.MIN_RUNTIME_SECONDS
+            ):
                 self.js.time_eff_violation = True
-            if self.js.time_efficiency < c.TIME_EFFICIENCY_RED and self.js.time_eff_violation:
+            if (
+                self.js.time_efficiency < c.TIME_EFFICIENCY_RED
+                and self.js.time_eff_violation
+            ):
                 clr = f"{self.txt_bold}{self.txt_red}"
         hs = self.human_seconds(SECONDS_PER_MINUTE * self.js.timelimitraw)
         return f"     Time Limit: {clr}{hs}{self.txt_normal}"
 
-    def draw_meter(self, efficiency: int, hardware: str, util: bool=False) -> str:
+    def draw_meter(self, efficiency: int, hardware: str, util: bool = False) -> str:
         bars = efficiency // 2
         if bars < 0:
             bars = 0
@@ -168,14 +178,28 @@ class BaseFormatter(ABC):
         clr2 = ""
         CPU_MEM_UTIL_RED = c.CPU_MEM_UTIL_RED if hasattr(c, "CPU_MEM_UTIL_RED") else 0
         GPU_MEM_UTIL_RED = c.GPU_MEM_UTIL_RED if hasattr(c, "GPU_MEM_UTIL_RED") else 0
-        if (efficiency < c.CPU_UTIL_RED and hardware == "cpu" and util and (not self.js.gpus)) or \
-           (efficiency < CPU_MEM_UTIL_RED and hardware == "cpumem" and util) or \
-           (efficiency < c.GPU_UTIL_RED and hardware == "gpu" and util) or \
-           (efficiency < GPU_MEM_UTIL_RED and hardware == "gpumem" and util):
+        if (
+            (
+                efficiency < c.CPU_UTIL_RED
+                and hardware == "cpu"
+                and util
+                and (not self.js.gpus)
+            )
+            or (efficiency < CPU_MEM_UTIL_RED and hardware == "cpumem" and util)
+            or (efficiency < c.GPU_UTIL_RED and hardware == "gpu" and util)
+            or (efficiency < GPU_MEM_UTIL_RED and hardware == "gpumem" and util)
+        ):
             clr1 = f"{self.txt_red}"
             clr2 = f"{self.txt_bold}{self.txt_red}"
-        return f"{self.txt_bold}[{self.txt_normal}" + clr1 + bars * "|" + spaces * " " + clr2 + \
-               text + f"{self.txt_normal}{self.txt_bold}]{self.txt_normal}"
+        return (
+            f"{self.txt_bold}[{self.txt_normal}"
+            + clr1
+            + bars * "|"
+            + spaces * " "
+            + clr2
+            + text
+            + f"{self.txt_normal}{self.txt_bold}]{self.txt_normal}"
+        )
 
     def format_note(self, *items, style="normal", indent_width=4, bullet="*") -> str:
         """Combine the pieces of the note and apply formatting."""
@@ -184,9 +208,9 @@ class BaseFormatter(ABC):
         if len(first_indent) >= 2:
             first_indent[-2] = bullet
         first_indent = "".join(first_indent)
-        wrapper = TextWrapper(width=78,
-                              subsequent_indent=indent,
-                              break_on_hyphens=False)
+        wrapper = TextWrapper(
+            width=78, subsequent_indent=indent, break_on_hyphens=False
+        )
         # combine the parts of the note
         note = ""
         starts = ("http", "ftp", "$ ", "#SBATCH")
@@ -223,11 +247,17 @@ class BaseFormatter(ABC):
         cores_per_node = int(self.js.ncpus) / int(self.js.nnodes)
         gb_per_core_used = total_used / total_cores / 1024**3 if total_cores != 0 else 0
         gb_per_core_total = total / total_cores / 1024**3 if total_cores != 0 else 0
-        gb_per_node_used = total_used / int(self.js.nnodes) / 1024**3 if int(self.js.nnodes) != 0 else 0
+        gb_per_node_used = (
+            total_used / int(self.js.nnodes) / 1024**3
+            if int(self.js.nnodes) != 0
+            else 0
+        )
         # zero GPU utilization
         zero_gpu = False
         if self.js.gpus:
-            num_unused_gpus = sum([util == 0 for _, util, _ in self.js.gpu_util__node_util_index])
+            num_unused_gpus = sum(
+                [util == 0 for _, util, _ in self.js.gpu_util__node_util_index]
+            )
             if num_unused_gpus:
                 zero_gpu = True
         else:
@@ -237,21 +267,37 @@ class BaseFormatter(ABC):
         if self.js.gpus:
             gpu_mem_used, gpu_mem_alloc = self.js.gpu_mem_total__used_alloc
             gpu_mem_used = gpu_mem_used / 1024**3
-        multi = "" if self.js.gpus - num_unused_gpus > 1 else "Is the code capable of using multiple GPUs? "
+        multi = (
+            ""
+            if self.js.gpus - num_unused_gpus > 1
+            else "Is the code capable of using multiple GPUs? "
+        )
         gpu_show = False if self.js.gpus and cpu_mem_per_gpu < 50 else True
         # zero CPU utilization
-        num_unused_nodes = sum([used == 0 for _, used, _, _ in self.js.cpu_util__node_used_alloc_cores])
+        num_unused_nodes = sum(
+            [used == 0 for _, used, _, _ in self.js.cpu_util__node_used_alloc_cores]
+        )
         zero_cpu = True if num_unused_nodes else False
-        multi_cpu = "" if int(self.js.nnodes) - num_unused_nodes > 1 else "Is the code capable of using multiple nodes? "
+        multi_cpu = (
+            ""
+            if int(self.js.nnodes) - num_unused_nodes > 1
+            else "Is the code capable of using multiple nodes? "
+        )
         # interactive
-        interactive_job = (self.js.jobname == "interactive") or self.js.jobname.startswith("sys/dashboard/sys/")
+        interactive_job = (
+            self.js.jobname == "interactive"
+        ) or self.js.jobname.startswith("sys/dashboard/sys/")
         # low cpu utilization
         somewhat = " " if self.js.cpu_efficiency < c.CPU_UTIL_RED else " somewhat "
         ceff = self.js.cpu_efficiency if self.js.cpu_efficiency > 0 else "less than 1"
         # next three lines needed for serial code using multiple CPU-cores note
         eff_if_serial = 100 / int(self.js.ncpus) if self.js.ncpus != "0" else -1
         serial_ratio = self.js.cpu_efficiency / eff_if_serial
-        approx = " approximately " if self.js.cpu_efficiency != round(eff_if_serial, 1) else " "
+        approx = (
+            " approximately "
+            if self.js.cpu_efficiency != round(eff_if_serial, 1)
+            else " "
+        )
         # next four lines needed for excess CPU memory note
         if self.js.cpu_memory_efficiency >= 1:
             opening = f"only used {self.js.cpu_memory_efficiency}%"
@@ -261,7 +307,10 @@ class BaseFormatter(ABC):
             cpn = c.CORES_PER_NODE[self.js.cluster]
         else:
             cpn = 0
-        if hasattr(c, "DEFAULT_MEM_PER_CORE") and self.js.cluster in c.DEFAULT_MEM_PER_CORE:
+        if (
+            hasattr(c, "DEFAULT_MEM_PER_CORE")
+            and self.js.cluster in c.DEFAULT_MEM_PER_CORE
+        ):
             mpc = c.DEFAULT_MEM_PER_CORE[self.js.cluster]
         else:
             mpc = 0
@@ -284,10 +333,10 @@ class BaseFormatter(ABC):
 class ClassicOutput(BaseFormatter):
     """Classic output formatter for the job report."""
 
-    def __init__(self, js: Jobstats, width: int=80) -> None:
+    def __init__(self, js: Jobstats, width: int = 80) -> None:
         super().__init__(js)
-        self.txt_bold   = ""
-        self.txt_red    = ""
+        self.txt_bold = ""
+        self.txt_red = ""
         self.txt_normal = ""
         self.width = width
 
@@ -353,21 +402,27 @@ class ClassicOutput(BaseFormatter):
             if self.js.is_mig_job():
                 # set utilization to 100 to avoid triggering low utilization notes
                 self.js.gpu_utilization = 100
-                gpu_util = f"  GPU utilization  {self.txt_bold}[{self.txt_normal}" \
-                           "     GPU utilization is unknown for MIG jobs      " \
-                           f"{self.txt_normal}{self.txt_bold}]{self.txt_normal}\n"
+                gpu_util = (
+                    f"  GPU utilization  {self.txt_bold}[{self.txt_normal}"
+                    "     GPU utilization is unknown for MIG jobs      "
+                    f"{self.txt_normal}{self.txt_bold}]{self.txt_normal}\n"
+                )
             else:
                 overall, overall_gpu_count = self.js.gpu_util_total__util_gpus
                 if overall_gpu_count:
                     self.js.gpu_utilization = overall / overall_gpu_count
-                    meter = self.draw_meter(round(self.js.gpu_utilization), "gpu", util=True)
+                    meter = self.draw_meter(
+                        round(self.js.gpu_utilization), "gpu", util=True
+                    )
                     gpu_util = f"  GPU utilization  {meter}\n"
                 else:
                     # set utilization to 100 to avoid triggering low utilization notes
                     self.js.gpu_utilization = 100
-                    gpu_util = f"  GPU utilization  {self.txt_bold}[{self.txt_normal}" \
-                               "            GPU utilization is unknown            " \
-                               f"{self.txt_normal}{self.txt_bold}]{self.txt_normal}\n"
+                    gpu_util = (
+                        f"  GPU utilization  {self.txt_bold}[{self.txt_normal}"
+                        "            GPU utilization is unknown            "
+                        f"{self.txt_normal}{self.txt_bold}]{self.txt_normal}\n"
+                    )
         elif self.js.gpu_util_error_code == 1:
             gpu_util = "  GPU utilization  (Value is unknown)\n"
         else:
@@ -381,22 +436,28 @@ class ClassicOutput(BaseFormatter):
             if self.js.is_mig_job():
                 # set utilization to 100 to avoid triggering low utilization notes
                 self.js.metric_utilization = 100
-                metric_util = f"{spaces}{gm.name} utilization  {self.txt_bold}[{self.txt_normal}" \
-                              "     {gm.name} utilization is unknown for MIG jobs      " \
-                              f"{self.txt_normal}{self.txt_bold}]{self.txt_normal}\n"
+                metric_util = (
+                    f"{spaces}{gm.name} utilization  {self.txt_bold}[{self.txt_normal}"
+                    "     {gm.name} utilization is unknown for MIG jobs      "
+                    f"{self.txt_normal}{self.txt_bold}]{self.txt_normal}\n"
+                )
             else:
                 overall, overall_gpu_count = gm.total__value_gpus
                 if overall_gpu_count:
                     self.js.metric_utilization = overall / overall_gpu_count
                     self.gm_overall[f"{gm.name}-util"] = overall / overall_gpu_count
-                    meter = self.draw_meter(round(self.js.metric_utilization), hardware="other", util=True)
+                    meter = self.draw_meter(
+                        round(self.js.metric_utilization), hardware="other", util=True
+                    )
                     metric_util = f"    {spaces}{gm.name} util. {meter}\n"
                 else:
                     # set utilization to 100 to avoid triggering low utilization notes
                     self.js.metric_utilization = 100
-                    metric_util = f"{spaces}{gm.name} utilization  {self.txt_bold}[{self.txt_normal}" \
-                                  f"            {gm.name} utilization is unknown            " \
-                                  f"{self.txt_normal}{self.txt_bold}]{self.txt_normal}\n"
+                    metric_util = (
+                        f"{spaces}{gm.name} utilization  {self.txt_bold}[{self.txt_normal}"
+                        f"            {gm.name} utilization is unknown            "
+                        f"{self.txt_normal}{self.txt_bold}]{self.txt_normal}\n"
+                    )
         elif gm.error_code == 1:
             metric_util = f"{spaces}{gm.name} utilization  (Value is unknown)\n"
         else:
@@ -431,8 +492,8 @@ class ClassicOutput(BaseFormatter):
 
     def grid_detailed_gpu_metrics(self) -> str:
         """Return the grid of metrics as a string. By only allowing for metrics
-           with a zero error code, one can ensure that each list of values has
-           has the same length."""
+        with a zero error code, one can ensure that each list of values has
+        has the same length."""
         if not self.js.detailed_gpu_metrics:
             return ""
         headers = []
@@ -446,22 +507,28 @@ class ClassicOutput(BaseFormatter):
                     if "power" in gm.metric:
                         value_str = str(round(value)) + "W"
                     elif "temperature" in gm.metric:
-                        value_str = str(round(value)) + "\u00B0" + "C"
+                        value_str = str(round(value)) + "\u00b0" + "C"
                     elif "rx" in gm.metric or "tx" in gm.metric:
                         value_str = str(self.human_bytes(round(value), 0)) + "/s"
                     elif any(x in gm.metric for x in ("sm", "occup", "dram")):
                         value_str = str(round(value)) + "%"
-                    elif any(x in gm.metric for x in ("duty", "tensor", "fp", "integer")):
+                    elif any(
+                        x in gm.metric for x in ("duty", "tensor", "fp", "integer")
+                    ):
                         value_str = str(round(value, 1)) + "%"
                     else:
                         value_str = str(value)
                     this_metric.append(value_str)
                 columns.append(this_metric)
-                row_labels = [f"    {node} (GPU {idx})  " for node, _, idx in gm.node_value_index]
+                row_labels = [
+                    f"    {node} (GPU {idx})  " for node, _, idx in gm.node_value_index
+                ]
         if not headers:
             return ""
-        col_widths = [max(len(header), max((len(val) for val in col), default=0))
-                      for header, col in zip(headers, columns)]
+        col_widths = [
+            max(len(header), max((len(val) for val in col), default=0))
+            for header, col in zip(headers, columns)
+        ]
         rows = list(zip(*columns))
         table_lines = []
         header_line = " | ".join(h.rjust(w) for h, w in zip(headers, col_widths))
@@ -477,13 +544,18 @@ class ClassicOutput(BaseFormatter):
                 final.append(" " * max(map(len, row_labels)) + line)
             else:
                 final.append(row_labels[i - 2] + line)
-        return "\n".join(final) + "\n" + " " * max(map(len, row_labels)) + "-" * len(table_lines[1])
+        return (
+            "\n".join(final)
+            + "\n"
+            + " " * max(map(len, row_labels))
+            + "-" * len(table_lines[1])
+        )
 
-    def output(self, no_color: bool=True) -> str:
+    def output(self, no_color: bool = True) -> str:
         if blessed_is_available and not no_color:
             term = Terminal()
-            self.txt_bold   = f"{term.bold}"
-            self.txt_red    = f"{term.red}"
+            self.txt_bold = f"{term.bold}"
+            self.txt_red = f"{term.red}"
             self.txt_normal = f"{term.normal}"
         ########################################################################
         #                               JOB METADATA                           #
@@ -551,12 +623,12 @@ class ClassicOutput(BaseFormatter):
                 report += "\n"
             else:
                 hb_alloc = self.human_bytes(alloc / cores).replace(".0GB", "GB")
-                report += f"({self.human_bytes(used/cores)}/{hb_alloc} per core of {cores})\n"
+                report += f"({self.human_bytes(used / cores)}/{hb_alloc} per core of {cores})\n"
         total_used, total, total_cores = self.js.cpu_mem_total__used_alloc_cores
         if self.js.nnodes != "1":
             report += f"{gutter}Total used/allocated: {self.human_bytes(total_used)}/{self.human_bytes(total)} "
             hb_total = self.human_bytes(total / total_cores).replace(".0GB", "GB")
-            report += f"({self.human_bytes(total_used/total_cores)}/{hb_total} per core of {total_cores})\n"
+            report += f"({self.human_bytes(total_used / total_cores)}/{hb_total} per core of {total_cores})\n"
         # GPUs
         if self.js.gpus:
             # GPU utilization
@@ -577,11 +649,16 @@ class ClassicOutput(BaseFormatter):
                         util = f"{util}%"
                     report += f"{gutter}    {node} (GPU {gpu_index}): {util}{msg}\n"
             else:
-                 report += f"{gutter}    An error was encountered ({self.js.gpu_util_error_code})\n"
+                report += f"{gutter}    An error was encountered ({self.js.gpu_util_error_code})\n"
             # GPU memory usage
             report += f"\n{gutter}GPU memory usage per node - maximum used/total\n"
             if self.js.gpu_mem_error_code == 0:
-                for node, used, total, gpu_index in self.js.gpu_mem__node_used_total_index:
+                for (
+                    node,
+                    used,
+                    total,
+                    gpu_index,
+                ) in self.js.gpu_mem__node_used_total_index:
                     hs_used = self.human_bytes(used)
                     hs_total = self.human_bytes(total).replace(".0GB", "GB")
                     eff = 100 * used / total
@@ -589,7 +666,11 @@ class ClassicOutput(BaseFormatter):
             else:
                 report += f"{gutter}    An error was encountered ({self.js.gpu_mem_error_code})\n"
             # detailed GPU metrics
-            num_detailed = sum(1 for gm in self.js.detailed_gpu_metrics if gm.show_per_gpu and gm.total__value_gpus[1])
+            num_detailed = sum(
+                1
+                for gm in self.js.detailed_gpu_metrics
+                if gm.show_per_gpu and gm.total__value_gpus[1]
+            )
             if c.GPU_METRICS and num_detailed > 2:
                 if len(self.js.detailed_gpu_metrics) > 3:
                     report += "\n  Detailed GPU Metrics\n"
@@ -610,10 +691,15 @@ class ClassicOutput(BaseFormatter):
                                         value = self.human_bytes(value) + "/s"
                                         pct = ""
                                     elif "temperature" in gm.metric:
-                                        pct = "\u00B0" + "C"
+                                        pct = "\u00b0" + "C"
                                     if value is not None and gm.is_percentage:
                                         report += f"{gutter}    {node} (GPU {gpu_index}): {value:.1f}{pct}\n"
-                                    elif value is not None and not gm.is_percentage and "rx" in gm.metric or "tx" in gm.metric:
+                                    elif (
+                                        value is not None
+                                        and not gm.is_percentage
+                                        and "rx" in gm.metric
+                                        or "tx" in gm.metric
+                                    ):
                                         report += f"{gutter}    {node} (GPU {gpu_index}): {value}{pct}\n"
                                     elif value is not None and not gm.is_percentage:
                                         report += f"{gutter}    {node} (GPU {gpu_index}): {round(value)}{pct}\n"
@@ -621,7 +707,7 @@ class ClassicOutput(BaseFormatter):
                                         report += f"{gutter}    An error was encountered ({gm.error_code})\n"
                             else:
                                 report += f"{gutter}    An error was encountered ({gm.error_code})\n"
-                #report += "                       https://princetonuniversity.github.io/jobstats/setup/detailed_gpu_metrics/\n"
+                # report += "                       https://princetonuniversity.github.io/jobstats/setup/detailed_gpu_metrics/\n"
 
         ########################################################################
         #                             BATCH SCRIPT                             #
@@ -640,9 +726,15 @@ class ClassicOutput(BaseFormatter):
         ########################################################################
         gpu_errors = False
         if self.js.gpus:
-            gpu_errors = bool(self.js.gpu_util_error_code > 0 or self.js.gpu_mem_error_code > 0)
+            gpu_errors = bool(
+                self.js.gpu_util_error_code > 0 or self.js.gpu_mem_error_code > 0
+            )
         heading = f"{self.txt_bold}Notes{self.txt_normal}"
-        if self.js.cpu_util_error_code == 0 and self.js.cpu_mem_error_code == 0 and not gpu_errors:
+        if (
+            self.js.cpu_util_error_code == 0
+            and self.js.cpu_mem_error_code == 0
+            and not gpu_errors
+        ):
             report += "\n"
             notes = self.job_notes()
             if notes:
@@ -660,9 +752,13 @@ class ClassicOutput(BaseFormatter):
                 report += f"{gutter}* The CPU memory usage could not be determined. Try the grafana dashboard.\n"
             if self.js.gpus:
                 if self.js.gpu_util_error_code:
-                    report += f"{gutter}* The GPU utilization could not be determined.\n"
+                    report += (
+                        f"{gutter}* The GPU utilization could not be determined.\n"
+                    )
                 if self.js.gpu_mem_error_code:
-                    report += f"{gutter}* The GPU memory usage could not be determined.\n"
+                    report += (
+                        f"{gutter}* The GPU memory usage could not be determined.\n"
+                    )
             report += f"{gutter}* No other notes will be shown.\n"
             report += "\n"
             return report

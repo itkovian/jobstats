@@ -1,8 +1,8 @@
-
 import argparse
 import os
 import subprocess
 import sys
+
 try:
     import MySQLdb
 except ImportError:
@@ -35,9 +35,18 @@ def mirror_to_admin_comment(jobid, stats):
     """
     try:
         result = subprocess.run(
-            ["sacctmgr", "-i", "update", "job",
-             f"jobid={jobid}", "set", f"AdminComment={stats}"],
-            capture_output=True, text=True, check=False,
+            [
+                "sacctmgr",
+                "-i",
+                "update",
+                "job",
+                f"jobid={jobid}",
+                "set",
+                f"AdminComment={stats}",
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
         )
         if result.returncode != 0:
             print(
@@ -60,7 +69,9 @@ def mirror_to_admin_comment(jobid, stats):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Store jobstats to external and/or Slurm database")
+    parser = argparse.ArgumentParser(
+        description="Store jobstats to external and/or Slurm database"
+    )
     parser.add_argument("--cluster", required=True, help="Cluster name")
     parser.add_argument(
         "--jobid",
@@ -81,7 +92,10 @@ def main():
 
     # Check if MySQLdb is available
     if MySQLdb is None:
-        print("ERROR: MySQLdb module not available. Install mysqlclient to use external database functionality.", file=sys.stderr)
+        print(
+            "ERROR: MySQLdb module not available. Install mysqlclient to use external database functionality.",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     # Save to external database
@@ -98,6 +112,7 @@ def main():
         mirror_to_admin_comment(args.jobid, args.stats)
 
     print("Successfully stored jobstats")
+
 
 if __name__ == "__main__":
     main()
